@@ -4,6 +4,8 @@
  */
 package volume;
 
+import util.VectorMath;
+
 /**
  *
  * @author michel
@@ -57,7 +59,20 @@ public class GradientVolume {
         }
         
         
-                
+        for(int x = 1; x < volume.getDimX()-1; x++){
+            for(int y = 1; y < volume.getDimY()-1; y++){
+                for(int z = 1; z < volume.getDimZ()-1; z++){
+                 /* double[] gradientVec = new double[3]; */
+                 double gradx  = 0.5*(volume.getVoxel(x+1, y, z) - volume.getVoxel(x-1, y, z));
+                 double grady  = 0.5*(volume.getVoxel(x, y+1, z) - volume.getVoxel(x, y-1, z));
+                 double gradz  = 0.5*(volume.getVoxel(x, y, z+1) - volume.getVoxel(x, y, z-1));
+                 /*VectorMath.setVector(gradientVec, gradx, grady, gradz);*/
+                 
+                 setGradient(x,y,z,new VoxelGradient((int)gradx,(int)grady,(int)gradz));
+                }
+            }
+        }
+               
     }
     
     public double getMaxGradientMagnitude() {

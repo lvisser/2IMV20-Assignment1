@@ -10,6 +10,7 @@ import com.jogamp.opengl.util.texture.Texture;
 import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
+import gui.TransferFunction2DEditor.TriangleWidget;
 import gui.TransferFunctionEditor;
 import java.awt.image.BufferedImage;
 import util.TFChangeListener;
@@ -24,7 +25,7 @@ import volume.VoxelGradient;
  */
 public class RaycastRenderer extends Renderer implements TFChangeListener {
     public enum Method{
-           SLICER, MIP, COMPOSITE
+           SLICER, MIP, COMPOSITE, TRANSFER
     }
     private Volume volume = null;
     private GradientVolume gradients = null;
@@ -96,23 +97,22 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int x = (int) Math.floor(coord[0]);
         int y = (int) Math.floor(coord[1]);
         int z = (int) Math.floor(coord[2]);
-        return volume.getVoxel(x, y, z);
         /* Get the Sx of all points of a "cube" in which the sample lies*/
-//        short x0 = volume.getVoxel(x,y,z);
-//        short x1 = volume.getVoxel(x+1,y,z);
-//        short x2 = volume.getVoxel(x,y+1,z);
-//        short x3 = volume.getVoxel(x+1,y+1,z);
-//        short x4 = volume.getVoxel(x,y,z+1);
-//        short x5 = volume.getVoxel(x+1,y,z+1);
-//        short x6 = volume.getVoxel(x,y+1,z+1);
-//        short x7 = volume.getVoxel(x+1,y+1,z+1);
-//        /* Calculate alpha, beta and gamma. Note |x1-x0| is always 1 for each x,y,z value*/
-//        int alpha = (int) (coord[0] - x);
-//        int beta = (int) (coord[1] - y);
-//        int gamma = (int) (coord[2] - z);
-//        
-//        int result = (1 - alpha) * (1 - beta) * (1 - gamma) * x0 + alpha * (1 - beta) * (1 - gamma) * x1 + (1 - alpha) * beta * (1 - gamma) * x2 + alpha * beta * (1 - gamma) * x3 + (1 - alpha) * (1 - beta) * gamma * x4 + alpha * (1 - beta) * gamma * x5 + (1 - alpha) * beta * gamma * x6 + alpha * beta * gamma * x7;
-//        return (short)result;
+        short x0 = volume.getVoxel(x,y,z);
+        short x1 = volume.getVoxel(x+1,y,z);
+        short x2 = volume.getVoxel(x,y+1,z);
+        short x3 = volume.getVoxel(x+1,y+1,z);
+        short x4 = volume.getVoxel(x,y,z+1);
+        short x5 = volume.getVoxel(x+1,y,z+1);
+        short x6 = volume.getVoxel(x,y+1,z+1);
+        short x7 = volume.getVoxel(x+1,y+1,z+1);
+        /* Calculate alpha, beta and gamma. Note |x1-x0| is always 1 for each x,y,z value*/
+        int alpha = (int) (coord[0] - x);
+        int beta = (int) (coord[1] - y);
+        int gamma = (int) (coord[2] - z);
+        
+        int result = (1 - alpha) * (1 - beta) * (1 - gamma) * x0 + alpha * (1 - beta) * (1 - gamma) * x1 + (1 - alpha) * beta * (1 - gamma) * x2 + alpha * beta * (1 - gamma) * x3 + (1 - alpha) * (1 - beta) * gamma * x4 + alpha * (1 - beta) * gamma * x5 + (1 - alpha) * beta * gamma * x6 + alpha * beta * gamma * x7;
+        return (short)result;
     }
 
     void mip(double[] viewMatrix) {
@@ -288,7 +288,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     voxelColor.g =  color.g*color.a + (1-color.a)*voxelColor.g;
                     voxelColor.r =  color.r*color.a + (1-color.a)*voxelColor.r;
                 }
-                voxelColor.a = 1;
                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
@@ -343,7 +342,30 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         + volumeCenter[2] + viewVec[2]*k;
                     
                     //VoxelGradient gradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
+                    GradientVolume gr = new GradientVolume(volume);
+                    TriangleWidget tw = null; 
                     
+                    /* Variables for formula below */
+                    int fx = getVoxel(pixelCoord);
+                    int fv = tw.baseIntensity;
+                    double r = tw.radius;
+                    TFColor color = tw.color;
+                    double grMag = gr.getMaxGradientMagnitude();
+                    
+                    /*Compute surface normal as described */
+                    if((grMag == 0) && fx == fv){
+                        color.a = color.a;
+                    }
+                    else if((grMag > 0) && (fx - r * grMag <= fv) && (fv <= fx+r*grMag)){
+                        color.a = color.a - (color.a / r) * ((fv-fx)/grMag);
+                    }else{
+                        color.a = 0;
+                    }
+                    
+                    
+                    voxelColor.b =  color.b*color.a + (1-color.a)*voxelColor.b;
+                    voxelColor.g =  color.g*color.a + (1-color.a)*voxelColor.g;
+                    voxelColor.r =  color.r*color.a + (1-color.a)*voxelColor.r;
                 }
                                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
@@ -439,6 +461,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             case COMPOSITE:
                 composite(viewMatrix);
                 break;
+            case TRANSFER:
+                transfer(viewMatrix);
+                break;  
         }
 
         long endTime = System.currentTimeMillis();

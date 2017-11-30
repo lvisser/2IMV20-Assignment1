@@ -96,13 +96,3 @@ public class Volume {
     private int[] histogram;
 }
 
-        /* indentify corners to calulate q0 and q1
-        double[] corner1 = new double[3];
-        VectorMath.setVector(corner1,0d - volumeCenter[0], 0d - volumeCenter[1], 0d - volumeCenter[2]);
-        double[] corner2 = new double[3];
-        VectorMath.setVector(corner2,volume.getDimX() - volumeCenter[0], 0d - volumeCenter[1], 0d - volumeCenter[2]);
-        double[] corner3 = new double[3];
-        VectorMath.setVector(corner3,0d - volumeCenter[0], volume.getDimY() - volumeCenter[1], 0d - volumeCenter[2]);
-        double[] corner4 = new double[3];
-        VectorMath.setVector(corner4, volume.getDimX() - volumeCenter[0], volume.getDimY() - volumeCenter[1], 0d - volumeCenter[2]);
-        */
