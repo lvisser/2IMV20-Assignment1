@@ -329,10 +329,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
         int stepsize = 20;
-        
+
         
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
+                double productResult = 1d;
                 for (double k = 0.0 - max; k < max ; k = k + stepsize ){
                     pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                         + volumeCenter[0] + viewVec[0]*k;
@@ -342,7 +343,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         + volumeCenter[2] + viewVec[2]*k;
                     
                     //VoxelGradient gradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
-                    GradientVolume gr = new GradientVolume(volume);
+                    
                     TriangleWidget tw = getTF2DPanel().triangleWidget; 
                     
                     /* Variables for formula below */
@@ -350,12 +351,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     int fv = tw.baseIntensity;
                     double r = tw.radius;
                     TFColor color = tw.color;
-                    double grMag = gr.getMaxGradientMagnitude();
-                    
+                    double grMag = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]).mag;
+                    voxelColor.r = color.r;
+                    voxelColor.g = color.g;
+                    voxelColor.b = color.b;
                     
                     /*Compute surface normal as described */
                     if((grMag == 0) && fx == fv){
-                        voxelColor.a = color.a;
+                       voxelColor.a = color.a;
                     }
                     else if((grMag > 0) && (fx - r * grMag <= fv) && (fv <= fx+r*grMag)){
                         voxelColor.a = color.a - (color.a / r) * ((fv-fx)/grMag);
@@ -364,10 +367,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     }
                     
                     
-                    voxelColor.b =  color.b*color.a + (1-color.a)*voxelColor.b;
-                    voxelColor.g =  color.g*color.a + (1-color.a)*voxelColor.g;
-                    voxelColor.r =  color.r*color.a + (1-color.a)*voxelColor.r;
+                    productResult = (1 - voxelColor.a)*productResult;
+                    
                 }
+                
+                voxelColor.a = 1- productResult;
+                
                                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
