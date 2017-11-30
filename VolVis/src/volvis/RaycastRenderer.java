@@ -343,7 +343,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     
                     //VoxelGradient gradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
                     GradientVolume gr = new GradientVolume(volume);
-                    TriangleWidget tw = null; 
+                    TriangleWidget tw = getTF2DPanel().triangleWidget; 
                     
                     /* Variables for formula below */
                     int fx = getVoxel(pixelCoord);
@@ -352,14 +352,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     TFColor color = tw.color;
                     double grMag = gr.getMaxGradientMagnitude();
                     
+                    
                     /*Compute surface normal as described */
                     if((grMag == 0) && fx == fv){
-                        color.a = color.a;
+                        voxelColor.a = color.a;
                     }
                     else if((grMag > 0) && (fx - r * grMag <= fv) && (fv <= fx+r*grMag)){
-                        color.a = color.a - (color.a / r) * ((fv-fx)/grMag);
+                        voxelColor.a = color.a - (color.a / r) * ((fv-fx)/grMag);
                     }else{
-                        color.a = 0;
+                        voxelColor.a = 0;
                     }
                     
                     
