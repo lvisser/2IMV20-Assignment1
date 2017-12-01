@@ -23,7 +23,11 @@ public class GradientVolume {
     }
 
     public VoxelGradient getGradient(int x, int y, int z) {
-        return data[x + dimX * (y + dimY * z)];
+//        try{
+            return data[x + dimX * (y + dimY * z)];
+//        }catch(ArrayIndexOutOfBoundsException e){
+//            continue;
+//        }
     }
 
     

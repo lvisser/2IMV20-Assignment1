@@ -269,7 +269,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through the origin of the volume data
         int max = Math.max(Math.max(volume.getDimX(), volume.getDimY()),volume.getDimZ());
         TFColor voxelColor = new TFColor();
-        int stepsize = 10;
+        int stepsize = 1;
         
 
         for (int j = 0; j < image.getHeight(); j++) {
@@ -341,13 +341,17 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         + volumeCenter[1] + viewVec[1]*k;
                     pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                         + volumeCenter[2] + viewVec[2]*k;
-                    
-                    //VoxelGradient gradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
-                    
+                                        
                     TriangleWidget tw = getTF2DPanel().triangleWidget; 
                     
                     /* Variables for formula below */
                     int fx = getVoxel(pixelCoord);
+                    
+                    /* Jumps to next iteration of the loop to avoid Array out of bound exception */
+                    if(fx == 0){
+                        continue;   
+                    }
+                    
                     int fv = tw.baseIntensity;
                     double r = tw.radius;
                     TFColor color = tw.color;
@@ -355,6 +359,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     voxelColor.r = color.r;
                     voxelColor.g = color.g;
                     voxelColor.b = color.b;
+                    
                     
                     /*Compute surface normal as described */
                     if((grMag == 0) && fx == fv){
@@ -372,7 +377,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 }
                 
                 voxelColor.a = 1- productResult;
-                
+
                                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
                 int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
