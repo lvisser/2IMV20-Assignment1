@@ -16,7 +16,6 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     RaycastRenderer renderer;
     TransferFunctionEditor tfEditor = null;
     TransferFunction2DEditor tfEditor2D = null;
-    
     /**
      * Creates new form RaycastRendererPanel
      */
@@ -24,7 +23,7 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         initComponents();
         this.renderer = renderer;
     }
-
+    
     public void setSpeedLabel(String text) {
         renderingSpeedLabel.setText(text);
     }
@@ -134,22 +133,27 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
 
     private void mipButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mipButtonActionPerformed
         renderer.changeMethod(RaycastRenderer.Method.MIP);
+        renderer.changed();
     }//GEN-LAST:event_mipButtonActionPerformed
 
     private void slicerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_slicerButtonActionPerformed
         renderer.changeMethod(RaycastRenderer.Method.SLICER);
+        renderer.changed();
     }//GEN-LAST:event_slicerButtonActionPerformed
 
     private void compositingButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_compositingButtonActionPerformed
         renderer.changeMethod(RaycastRenderer.Method.COMPOSITE);
+        renderer.changed();
     }//GEN-LAST:event_compositingButtonActionPerformed
 
     private void tf2dButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tf2dButtonActionPerformed
         renderer.changeMethod(RaycastRenderer.Method.TRANSFER);
+        renderer.changed();
     }//GEN-LAST:event_tf2dButtonActionPerformed
 
     private void shadingCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
-        JOptionPane.showMessageDialog(this, "Not implemented.");
+        renderer.setShading(this.shadingCheckbox.isSelected());
+        renderer.changed();
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -24,6 +24,10 @@ import volume.VoxelGradient;
  * @author michel
  */
 public class RaycastRenderer extends Renderer implements TFChangeListener {
+
+    public void setShading(boolean selected) {
+        shading = selected;
+    }
     public enum Method{
            SLICER, MIP, COMPOSITE, TRANSFER
     }
@@ -34,6 +38,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
     Method method;
+    boolean shading = false;
 
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
@@ -41,6 +46,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         method = method.SLICER;
     }
     
+
     public void changeMethod(Method method){
         this.method = method;
         changed();
@@ -143,7 +149,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
-        int stepsize = 25;
+        
+        int stepsize;
+        
+        if(interactiveMode){
+            stepsize = 15;
+        }else{
+            stepsize = 1;
+        }
         
         
         for (int j = 0; j < image.getHeight(); j++) {
@@ -269,7 +282,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through the origin of the volume data
         int max = Math.max(Math.max(volume.getDimX(), volume.getDimY()),volume.getDimZ());
         TFColor voxelColor = new TFColor();
-        int stepsize = 1;
+
+        int stepsize;
+        
+        if(interactiveMode){
+            stepsize = 15;
+        }else{
+            stepsize = 1;
+        }
         
 
         for (int j = 0; j < image.getHeight(); j++) {
@@ -328,7 +348,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
-        int stepsize = 20;
+        int stepsize;
+        
+        if(interactiveMode){
+            stepsize = 5;
+        }else{
+            stepsize = 1;
+        }
 
         
         for (int j = 0; j < image.getHeight(); j++) {
@@ -356,27 +382,63 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     double r = tw.radius;
                     TFColor color = tw.color;
                     double grMag = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]).mag;
-                    voxelColor.r = color.r;
-                    voxelColor.g = color.g;
-                    voxelColor.b = color.b;
+                    VoxelGradient grad = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
                     
-                    
-                    /*Compute surface normal as described */
-                    if((grMag == 0) && fx == fv){
-                       voxelColor.a = color.a;
-                    }
-                    else if((grMag > 0) && (fx - r * grMag <= fv) && (fv <= fx+r*grMag)){
-                        voxelColor.a = color.a - (color.a / r) * ((fv-fx)/grMag);
+                    if(shading){
+                        double k_ambient = 0.1;
+                        double k_diff = 0.7;
+                        double k_spec = 0.2;
+                        int alpha = 10;
+                        double[] N = new double[3];
+                        
+                        TFColor light = new TFColor();
+                        light.r = light.g = light.b = 1;
+                        
+                        if(grMag == 0){
+                            /* Otherwise you devide by zero */
+                            VectorMath.setVector(N, 0, 0, 0);
+                        }else{
+                            VectorMath.setVector(N, grad.x/grMag, grad.y/grMag, grad.z/grMag);  
+                        }
+                        
+                        double dotproduct = Math.abs(VectorMath.dotproduct(viewVec, N));
+                         /*Compute surface normal as described */
+                        if((grMag == 0) && fx == fv){
+                           voxelColor.a = color.a;
+                        }
+                        else if((grMag > 0) && (fx - r * grMag <= fv) && (fv <= fx+r*grMag)){
+                            voxelColor.a = color.a - (color.a / r) * Math.abs(((fv-fx)/grMag));
+                        }else{
+                            voxelColor.a = 0;
+                        }
+                        
+                        
+                        voxelColor.r = (1 - voxelColor.a)*voxelColor.r +voxelColor.a*(light.r * k_ambient + k_diff * color.r * dotproduct + k_spec * Math.pow(dotproduct,alpha));
+                        voxelColor.b = (1 - voxelColor.a)*voxelColor.b +voxelColor.a*(light.b * k_ambient + k_diff * color.b * dotproduct + k_spec * Math.pow(dotproduct,alpha));
+                        voxelColor.g = (1 - voxelColor.a)*voxelColor.g +voxelColor.a*(light.g * k_ambient + k_diff * color.g * dotproduct + k_spec * Math.pow(dotproduct,alpha));
+                        productResult = (1 - voxelColor.a)*productResult;
                     }else{
-                        voxelColor.a = 0;
-                    }
-                    
-                    
-                    productResult = (1 - voxelColor.a)*productResult;
-                    
+                        /*Compute surface normal as described */
+                        if((grMag == 0) && fx == fv){
+                           voxelColor.a = color.a;
+                        }
+                        else if((grMag > 0) && (fx - r * grMag <= fv) && (fv <= fx+r*grMag)){
+                            voxelColor.a = color.a - (color.a / r) * Math.abs(((fv-fx)/grMag));
+                        }else{
+                            voxelColor.a = 0;
+                        }
+
+
+                        productResult = (1 - voxelColor.a)*productResult;
+                        voxelColor.b =  color.b*color.a + (1-color.a)*voxelColor.b;
+                        voxelColor.g =  color.g*color.a + (1-color.a)*voxelColor.g;
+                        voxelColor.r =  color.r*color.a + (1-color.a)*voxelColor.r;
+                    }                
                 }
                 
-                voxelColor.a = 1- productResult;
+                voxelColor.a = 1 - productResult;
+
+                
 
                                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
